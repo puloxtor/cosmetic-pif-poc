@@ -1,0 +1,6 @@
+﻿# Ignore node_modules and Python cache
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+
