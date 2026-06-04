@@ -1,6 +1,5 @@
-﻿# Ignore node_modules and Python cache
-node_modules/
 __pycache__/
 *.pyc
+outputs/*.md
+.venv/
 .DS_Store
-
