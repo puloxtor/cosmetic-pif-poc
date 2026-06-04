@@ -55,3 +55,10 @@ def all_lines(path: str, y_tol: float = 6.0) -> list[str]:
     for page in extract_lines(path, y_tol=y_tol):
         out.extend(page)
     return out
+
+
+def has_text_layer(path: str, min_chars: int = 40) -> bool:
+    """True, ако PDF-ът има извличаем текстов слой (значи е цифров, не сканиран).
+    Сканираните PDF-и връщат малко/никакъв текст → маршрутираме към AI-зрение."""
+    chars = sum(len(l) for l in all_lines(path))
+    return chars >= min_chars
