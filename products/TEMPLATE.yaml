@@ -1,50 +1,63 @@
 # ШАБЛОН ЗА ПРОДУКТ — копирай този файл и попълни за нов продукт.
-# Това е целта на Задача 3 от roadmap-а: вход без редактиране на Python код.
-# (Засега зареждащият код за YAML още НЕ е написан — това е една от
-#  първите задачи, които ще свършиш с Claude Code. Виж ROADMAP.md, Задача 3.)
+# Един файл = един продукт (една сесия). Пускане:
+#     python3 pifgen.py products/моят_продукт.yaml
+#
+# Формат „композишън" (Задача 3): не въвеждаш крайни концентрации наум —
+# въвеждаш СУРОВИНИ с тяхната доза + композишън стейтмънта от доставчика.
+# Енджинът смята концентрациите, сумира повтарящите се INCI и генерира INCI.
+#
+# Правила за стойностите на конституент:
+#   pct: X            точен процент в суровината
+#   range: [low, high]  диапазон → взима се ГОРНАТА граница (worst-case)
+#   at_most: X        (≤X) → взима X
+#   remainder: true   отворена горна граница ("над 50%") → остатък до 100%
+# При диапазон/остатък/сума≠100% инструментът дава аларма (не нормализира тихо).
 
 product:
   name: "Примерен продукт"
-  cpnp_code: ""
+  cpnp_code: ""                    # по избор; добавя се към името
   product_type: "rinse-off"        # rinse-off | leave-on
   applied_amount_g: 10.46          # приложено количество (g/ден)
   retention_factor: 0.01           # 0.01 за rinse-off, до 1.0 за leave-on
   body_weight_kg: 60.0
   sale_countries: ["BG"]
 
-# Формула: всеки ред е INCI име + концентрация + (по избор) токсикология/алергени
-formula:
-  - inci_name: "Aqua"
-    cas: "7732-18-5"
-    function: "разтворител"
-    concentration_pct: 28.15
-    has_sds: true
-    has_coa: true
+raw_materials:
+  # --- Обикновена суровина (масло/екстракт): разлага се по композиция ---
+  - name: "Sweet Almond Oil"
+    dose_pct: 80.0                 # % суровина в крайния продукт
+    composition:
+      - { inci_name: "Prunus Amygdalus Dulcis Oil", cas: "8007-69-0", pct: 100 }
 
-  - inci_name: "Citrus Grandis Peel Oil"
-    cas: "90045-43-5"
-    function: "балсам за кожа"
-    concentration_pct: 0.30
+  # --- Смес с диапазони (взима се горната граница на всеки) ---
+  - name: "Пример смес"
+    dose_pct: 3.0
+    composition:
+      - { inci_name: "Helianthus Annuus Seed Oil", cas: "8001-21-6", range: [45, 55] }
+      - { inci_name: "Tocopherol", cas: "59-02-9", pct: 0.9 }
+
+  # --- Глицеролов екстракт с отворена горна граница ("над 50%") ---
+  - name: "Пример глицеролов екстракт"
+    dose_pct: 0.25
+    composition:
+      - { inci_name: "Propylene Glycol", cas: "57-55-6", remainder: true }
+      - { inci_name: "Aqua", cas: "7732-18-5", range: [10, 24.9] }
+      - { inci_name: "Rosmarinus Officinalis Leaf Extract", cas: "84604-14-8", range: [10, 24.9] }
+      # консервант с реална токсикология (НЕ измисляй PoD!):
+      - inci_name: "Phenoxyethanol"
+        cas: "122-99-6"
+        pct: 0.45
+        restricted: true
+        max_allowed_pct: 1.0
+        tox: { pod: 400.0, dermal_absorption: 0.50 }   # от досието, не наизуст
+
+  # --- Ароматна суровина: декларирай алергените като % В ПАРФЮМА ---
+  - name: "Parfum (пример)"
+    dose_pct: 1.0
     is_fragrance: true
-    has_sds: true
-    has_coa: true
-    has_ifra: true
     allergens:
-      - name: "Limonene"
-        cas: "5989-27-5"
-        fraction: 0.90            # масов дял на алергена в този компонент
-
-  - inci_name: "Phenoxyethanol"
-    cas: "122-99-6"
-    function: "консервант"
-    concentration_pct: 0.40
-    restricted: true
-    max_allowed_pct: 1.0
-    has_sds: true
-    has_coa: true
-    tox:
-      pod: 400.0                  # ИСТИНСКАТА стойност от досието, не измислена!
-      dermal_absorption: 0.50     # DAp дял (0.50 = 50% по подразбиране SCCS)
+      - { name: "Limonene", cas: "5989-27-5", pct_in_fragrance: 4.0 }
+      - { name: "Linalool", cas: "78-70-6", pct_in_fragrance: 1.5 }
 
 claims:
   - "Подходящ за честа употреба"
