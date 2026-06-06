@@ -15,6 +15,8 @@
 - Добавен е **portable handoff kit** за смяна между двата акаунта:
   `.claude/hooks/session_start.sh` (branch-agnostic sync + surface), `.claude/settings.json`,
   този `HANDOFF.md`, секция в `CLAUDE.md` и `HANDOFF_KIT.md` (инсталатор за други репо-та).
+- Auto-pull-ът е **opt-in** чрез `.claude/handoff-sync-on` (тук е създаден → включен).
+  В UX репото kit-ът се инсталира БЕЗ този файл → спящ, докато потребителят го включи.
 
 ## Какво следва (подреден списък)
 1. **Master Composition Table + Annex проверки** — нови sibling модули

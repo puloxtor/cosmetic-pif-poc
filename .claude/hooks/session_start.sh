@@ -1,14 +1,23 @@
 #!/usr/bin/env bash
-# SessionStart: sync the current branch to its upstream (if clean) and surface state.
-# Repo/branch-agnostic — safe to drop into any repo. No tests (saves credits).
+# SessionStart: surface handoff state, and (only when enabled) sync the current
+# branch to its upstream. Repo/branch-agnostic — safe to drop into any repo.
+#
+# Auto-pull is OPT-IN: it runs only if the file .claude/handoff-sync-on exists.
+# This lets you install the kit while mid-work without it touching anything;
+# enable later with:  touch .claude/handoff-sync-on && git add -A && git commit && git push
+# Even when enabled it never discards work: it skips a dirty tree and only fast-forwards.
 set -u
-UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)"
-if [ -n "$UPSTREAM" ] && [ -z "$(git status --porcelain 2>/dev/null)" ]; then
-  git fetch -q 2>/dev/null \
-    && git merge --ff-only "$UPSTREAM" -q 2>/dev/null \
-    && echo "✓ synced with $UPSTREAM"
+if [ -f .claude/handoff-sync-on ]; then
+  UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)"
+  if [ -n "$UPSTREAM" ] && [ -z "$(git status --porcelain 2>/dev/null)" ]; then
+    git fetch -q 2>/dev/null \
+      && git merge --ff-only "$UPSTREAM" -q 2>/dev/null \
+      && echo "✓ synced with $UPSTREAM"
+  else
+    echo "⚠ no upstream or local changes present — skipping auto-pull"
+  fi
 else
-  echo "⚠ no upstream or local changes present — skipping auto-pull"
+  echo "ℹ auto-pull disabled (no .claude/handoff-sync-on) — surfacing state only"
 fi
 echo; echo "===== HANDOFF.md ====="
 [ -f HANDOFF.md ] && cat HANDOFF.md || echo "(no HANDOFF.md yet)"
