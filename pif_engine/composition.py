@@ -20,6 +20,7 @@ from .models import (
     Product, ProductType, Ingredient, FormulaLine, Claim, AllergenContent,
     ToxProfile,
 )
+from .nomenclature import canonical_inci, declarable_name
 
 SUM_TOLERANCE = 0.5   # допустимо отклонение на сумата от 100%
 
@@ -76,13 +77,15 @@ def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
     if rm.get("is_fragrance"):
         allergens = []
         for a in rm.get("allergens", []):
+            if declarable_name(a["name"]) is None:
+                continue
             allergens.append(AllergenContent(
                 name=a["name"],
                 cas=a.get("cas", "-"),
                 fraction=float(a["pct_in_fragrance"]) / 100.0,
             ))
         parfum = Ingredient(
-            inci_name=rm.get("inci_name", "Parfum"),
+            inci_name=canonical_inci(rm.get("inci_name", "Parfum")),
             cas=rm.get("cas", "-"),
             function=rm.get("function", "ароматна композиция"),
             is_fragrance=True,
@@ -112,7 +115,7 @@ def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
             warnings.append(f"ℹ️ {name} / {c['inci_name']}: {note}.")
         conc = dose * upper / 100.0
         ing = Ingredient(
-            inci_name=c["inci_name"],
+            inci_name=canonical_inci(c["inci_name"]),
             cas=c.get("cas", "-"),
             function=c.get("function", rm.get("function", "")),
             tox=_parse_tox(c.get("tox")),

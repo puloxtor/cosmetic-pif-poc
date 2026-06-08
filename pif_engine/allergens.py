@@ -3,6 +3,7 @@
 """
 from __future__ import annotations
 from .models import Product, ProductType, FormulaLine
+from .nomenclature import localize_inci
 
 
 # Прагове за деклариране на алергени (Регламент 1223/2009, Анекс III)
@@ -87,4 +88,4 @@ def generate_inci(product: Product) -> list[str]:
         for a in allergens_to_declare(product):
             if a not in inci:
                 inci.append(a)
-    return inci
+    return [localize_inci(n, product.sale_countries) for n in inci]
