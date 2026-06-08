@@ -6,6 +6,7 @@ from pif_engine.extraction.parse import (
     parse_composition, parse_fragrance, looks_like_fragrance,
 )
 from pif_engine.extraction.draft import raw_material_draft, to_yaml
+from pif_engine.extraction.filter import filter_candidates
 
 
 # ---------- композиция: диапазони и точни % (Phenbiox / Vitapherole) ----------
@@ -110,3 +111,31 @@ def test_draft_fragment_is_valid_yaml_and_loads_back():
     doc = yaml.safe_load(text)
     assert doc["raw_materials"][0]["name"] == "Oleophen"
     assert doc["raw_materials"][0]["dose_pct"] == 3.0
+
+
+# ---------- филтър на не-INCI кандидати (в енджина, не в UX) ----------
+
+def test_filter_drops_boilerplate_keeps_real_inci():
+    rms = [{
+        "name": "Oleophen",
+        "dose_pct": 3.0,
+        "composition": [
+            {"inci_name": "Helianthus Annuus Seed Oil", "range": [45.0, 55.0]},
+            {"inci_name": "Registration according to REACh 1907/2006", "pct": 1.0},
+        ],
+    }]
+    out, dropped = filter_candidates(rms)
+    assert dropped == 1
+    names = [c["inci_name"] for c in out[0]["composition"]]
+    assert names == ["Helianthus Annuus Seed Oil"]
+
+
+def test_filter_keeps_colour_index_and_empty_when_no_drops():
+    rms = [{
+        "name": "Pigment",
+        "dose_pct": 2.0,
+        "composition": [{"inci_name": "CI 77491", "pct": 2.0}],
+    }]
+    out, dropped = filter_candidates(rms)
+    assert dropped == 0
+    assert out[0]["composition"] == [{"inci_name": "CI 77491", "pct": 2.0}]

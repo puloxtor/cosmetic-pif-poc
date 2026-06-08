@@ -15,9 +15,13 @@ import base64
 import json
 import os
 import re
+import threading
+import time
 
-# По подразбиране — най-способният модел (виж claude-api skill). Сменяем с env.
-DEFAULT_MODEL = os.environ.get("PIF_VISION_MODEL", "claude-opus-4-8")
+# По подразбиране Haiku: има по-висока TPM квота, достатъчна за OCR на
+# структурирани документи (композишън стейтмънти, листи с алергени). Opus е
+# запазен за бъдещо генериране на проза. Сменяем с env PIF_VISION_MODEL.
+DEFAULT_MODEL = os.environ.get("PIF_VISION_MODEL", "claude-haiku-4-5-20251001")
 
 _MEDIA = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -122,25 +126,57 @@ def _content_block(path: str) -> dict:
     return {"type": btype, "source": {"type": "base64", "media_type": media, "data": data}}
 
 
+# Backoff и хвърляне при rate limit / претоварване (429/529). _BACKOFF_BASE се
+# подменя с 0 в тестовете, за да няма реално чакане. Максимум 3 повтаряния
+# (2s/4s/8s при основа 2.0), след което вдигаме оригиналната грешка.
+_BACKOFF_BASE = 2.0
+_MAX_RETRIES = 3
+
+# Тротъл на едновременните vision извиквания — пести TPM квота и пази от
+# заливане на API при паралелна обработка на много документи.
+MAX_CONCURRENT_VISION = 2
+_VISION_SEMAPHORE = threading.Semaphore(MAX_CONCURRENT_VISION)
+
+
 def _call_model(path: str, kind: str, model: str) -> dict:
-    """Извиква Claude (vision) и връща JSON по схемата. Изолирано за тестване."""
+    """Извиква Claude (vision) и връща JSON по схемата. Изолирано за тестване.
+
+    С retry/backoff при 429/529 (RateLimitError/APIStatusError) и семафор за
+    ограничаване на едновременните извиквания.
+    """
     try:
         import anthropic
     except ImportError as e:  # pragma: no cover
         raise ImportError("За AI-зрение е нужен пакетът `anthropic` (`pip install anthropic`).") from e
     client = anthropic.Anthropic()  # чете ANTHROPIC_API_KEY от средата
-    resp = client.messages.create(
-        model=model,
-        max_tokens=16000,
-        system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
-        output_config={"format": {"type": "json_schema", "schema": _SCHEMAS[kind]}},
-        messages=[{
-            "role": "user",
-            "content": [_content_block(path), {"type": "text", "text": _PROMPTS[kind]}],
-        }],
-    )
-    text = next((b.text for b in resp.content if b.type == "text"), "")
-    return json.loads(text)
+
+    def _once() -> dict:
+        resp = client.messages.create(
+            model=model,
+            max_tokens=16000,
+            system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
+            output_config={"format": {"type": "json_schema", "schema": _SCHEMAS[kind]}},
+            messages=[{
+                "role": "user",
+                "content": [_content_block(path), {"type": "text", "text": _PROMPTS[kind]}],
+            }],
+        )
+        text = next((b.text for b in resp.content if b.type == "text"), "")
+        return json.loads(text)
+
+    with _VISION_SEMAPHORE:
+        for attempt in range(_MAX_RETRIES):
+            try:
+                return _once()
+            except (anthropic.RateLimitError, anthropic.APIStatusError) as e:
+                status = getattr(e, "status_code", None)
+                # Повтаряме само за 429 (rate limit) и 529 (overloaded).
+                if isinstance(e, anthropic.APIStatusError) and status not in (429, 529):
+                    raise
+                if attempt == _MAX_RETRIES - 1:
+                    raise  # изчерпани опити → вдигаме оригиналната грешка
+                time.sleep(_BACKOFF_BASE * (2 ** attempt))
+        raise AssertionError("unreachable")  # pragma: no cover
 
 
 # ---- Детерминистично преобразуване на суровия текст към spec (не от LLM) ----

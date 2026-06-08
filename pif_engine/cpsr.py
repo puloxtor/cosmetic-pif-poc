@@ -6,6 +6,7 @@ from __future__ import annotations
 from datetime import date
 from .models import Product
 from .allergens import generate_inci, allergens_to_declare, calculate_allergens
+from .composition import suppressed_ingredients
 from .toxicology import product_is_safe
 from .claims import validate_all_claims
 
@@ -64,6 +65,22 @@ def generate_cpsr(product: Product) -> str:
     total = sum(l.concentration_pct for l in product.formula)
     L.append(f"\n**Общо: {total:.2f}%** "
              f"{'✅' if abs(total-100) < 0.01 else '⚠️ ≠ 100%'}\n")
+
+    # Одитна следа: съставки, документирани в Част А, но ИЗКЛЮЧЕНИ от етикетната
+    # INCI листа според функцията си (напр. денатуранти, Член 19). Не е тих
+    # пропуск — изброяваме всяка изключена съставка и причината (CLAUDE.md).
+    # Воден от същия suppressed_ingredients, който управлява и филтъра в INCI.
+    suppressed = suppressed_ingredients(product)
+    if suppressed:
+        L.append("### Изключени от етикетната INCI листа (одитна следа)")
+        for ing in suppressed:
+            L.append(
+                f"- ⚠️ Изключено от INCI декларацията "
+                f"({ing.function}, не се декларира): "
+                f"„{ing.inci_name}“ — присъства в суровина, но не влиза в "
+                f"етикетната INCI листа съгласно функцията си."
+            )
+        L.append("")
 
     L.append("## A.2 Класификация и излагане")
     L.append(f"- Тип продукт: **{product.product_type.value}**")

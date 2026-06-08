@@ -10,7 +10,9 @@ from .models import (
     Product, ProductType, Ingredient, FormulaLine, Claim,
     AllergenContent, ToxProfile,
 )
-from .composition import build_product, consolidated_concentrations
+from .composition import (
+    build_product, consolidated_concentrations, suppressed_ingredients,
+)
 from .loader import load_product
 from .allergens import generate_inci, allergens_to_declare, calculate_allergens
 from .toxicology import calculate_mos, product_is_safe
@@ -19,6 +21,7 @@ from .cpsr import generate_cpsr
 from .nomenclature import (
     canonical_inci, is_declarable, declarable_name,
     localize_inci, validate_inci, DECLARABLE_ALLERGENS,
+    SUPPRESS_FROM_INCI, is_suppressed_function,
 )
 
 __all__ = [
@@ -30,4 +33,6 @@ __all__ = [
     "calculate_mos", "product_is_safe", "validate_all_claims", "generate_cpsr",
     "canonical_inci", "is_declarable", "declarable_name",
     "localize_inci", "validate_inci", "DECLARABLE_ALLERGENS",
+    "SUPPRESS_FROM_INCI", "is_suppressed_function",
+    "suppressed_ingredients",
 ]

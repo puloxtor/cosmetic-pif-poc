@@ -4,6 +4,7 @@
 from __future__ import annotations
 from .models import Product, ProductType, FormulaLine
 from .nomenclature import localize_inci
+from .composition import suppressed_ingredients
 
 
 # Прагове за деклариране на алергени (Регламент 1223/2009, Анекс III)
@@ -68,6 +69,11 @@ def generate_inci(product: Product) -> list[str]:
     - Алергените се добавят СЛЕД 'Parfum/Aroma'
     """
     lines = _consolidated_lines(product)
+    # Изключи съставки, които не влизат в етикетната INCI листа според функцията
+    # си (напр. денатуранти, Член 19). Не е тих пропуск: одитната бележка в CPSR
+    # Част А ги изброява явно, водена от същия suppressed_ingredients (CLAUDE.md).
+    suppressed_names = {ing.inci_name for ing in suppressed_ingredients(product)}
+    lines = [l for l in lines if l.ingredient.inci_name not in suppressed_names]
     above_1 = sorted(
         [l for l in lines if l.concentration_pct >= 1.0],
         key=lambda l: l.concentration_pct, reverse=True

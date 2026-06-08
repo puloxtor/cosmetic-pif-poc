@@ -20,7 +20,7 @@ from .models import (
     Product, ProductType, Ingredient, FormulaLine, Claim, AllergenContent,
     ToxProfile,
 )
-from .nomenclature import canonical_inci, declarable_name
+from .nomenclature import canonical_inci, declarable_name, is_suppressed_function
 
 SUM_TOLERANCE = 0.5   # допустимо отклонение на сумата от 100%
 
@@ -167,6 +167,23 @@ def build_product(doc: dict) -> tuple[Product, list[str]]:
         retention_factor=float(p.get("retention_factor", 0.01)),
     )
     return product, warnings
+
+
+def suppressed_ingredients(product: Product) -> list[Ingredient]:
+    """Съставки, изключени от етикетната INCI листа според функцията си
+    (напр. денатуранти, Член 19). Дедупликирани по INCI име, в реда на поява.
+
+    ЕДИНСТВЕН източник за: (1) филтъра в generate_inci и (2) одитната бележка
+    в CPSR Част А. И двете тръгват оттук, за да няма тих пропуск (CLAUDE.md).
+    """
+    out: list[Ingredient] = []
+    seen: set[str] = set()
+    for line in product.formula:
+        ing = line.ingredient
+        if is_suppressed_function(ing.function) and ing.inci_name not in seen:
+            seen.add(ing.inci_name)
+            out.append(ing)
+    return out
 
 
 def consolidated_concentrations(product: Product) -> dict[str, float]:

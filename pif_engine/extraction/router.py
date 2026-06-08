@@ -11,6 +11,7 @@ import os
 from .pdf import all_lines, has_text_layer
 from .parse import parse_composition, parse_fragrance, looks_like_fragrance
 from .draft import raw_material_draft
+from .filter import filter_candidates
 
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 
@@ -80,8 +81,19 @@ def extract_drafts(path: str, kind: str = "auto", ocr_mode: str = "auto",
             notes.append(f"{rm_name}: сканиран PDF (без текстов слой) → AI-зрение.")
 
     if use_vision:
-        return _vision(path, kind, rm_name, dose_val, model, notes), notes
-    if _is_image(path):
+        rms = _vision(path, kind, rm_name, dose_val, model, notes)
+    elif _is_image(path):
         notes.append(f"{rm_name}: изображение, но OCR е забранен — въведи ръчно.")
-        return [raw_material_draft(rm_name, dose_val, constituents=[])], notes
-    return _deterministic(path, kind, rm_name, dose_val, notes), notes
+        rms = [raw_material_draft(rm_name, dose_val, constituents=[])]
+    else:
+        rms = _deterministic(path, kind, rm_name, dose_val, notes)
+
+    # Отсей не-INCI кандидати (правен/табличен/адресен текст) на ВСИЧКИ пътища,
+    # преди да върнем черновата. Не е тих пропуск — добавяме бележка с броя.
+    rms, dropped = filter_candidates(rms)
+    if dropped:
+        notes.append(
+            f"{rm_name}: пропуснати {dropped} реда, които не приличат на INCI "
+            "(правен/табличен/адресен текст). Провери дали не липсва реална съставка."
+        )
+    return rms, notes

@@ -111,6 +111,17 @@ _DECLARABLE_EXTRA: dict[str, str] = {}
 DECLARABLE_ALLERGENS = {**_DECLARABLE_26, **_DECLARABLE_EXTRA}
 
 
+# Функции, чиито съставки НЕ влизат в етикетната INCI листа (Член 19).
+# Денатурантите присъстват в суровината (документират се в Част А), но не се
+# декларират на етикета според функцията си. РЕДАКТИРУЕМИ данни — поддържай ги.
+SUPPRESS_FROM_INCI = {"denaturant"}
+
+
+def is_suppressed_function(fn: str | None) -> bool:
+    """True, ако функцията изключва съставката от етикетната INCI листа."""
+    return (fn or "").strip().lower() in SUPPRESS_FROM_INCI
+
+
 def declarable_name(name: str) -> str | None:
     return (DECLARABLE_ALLERGENS.get(_key(canonical_inci(name)))
             or DECLARABLE_ALLERGENS.get(_key(name)))

@@ -84,3 +84,96 @@ def test_detect_media_type():
     assert vision.detect_media_type("c.png") == "image/png"
     with pytest.raises(ValueError):
         vision.detect_media_type("d.txt")
+
+
+# ---- модел по подразбиране (E-3) ----
+
+def test_default_model_is_haiku():
+    # Haiku има по-висока TPM квота, достатъчна за OCR на структурирани документи.
+    assert vision.DEFAULT_MODEL == "claude-haiku-4-5-20251001"
+
+
+# ---- retry/backoff (E-4), офлайн с фалшив клиент ----
+
+class _FakeRateLimit(Exception):
+    """Замества anthropic.RateLimitError в офлайн теста."""
+    status_code = 429
+
+
+class _FakeAPIStatus(Exception):
+    """Замества anthropic.APIStatusError в офлайн теста."""
+    def __init__(self, status_code):
+        super().__init__(f"status {status_code}")
+        self.status_code = status_code
+
+
+class _FakeAnthropicModule:
+    RateLimitError = _FakeRateLimit
+    APIStatusError = _FakeAPIStatus
+
+    class _Messages:
+        def __init__(self, behaviour):
+            self._behaviour = behaviour
+            self.calls = 0
+
+        def create(self, **kwargs):
+            self.calls += 1
+            return self._behaviour(self.calls)
+
+    class Anthropic:
+        _behaviour = None
+        last_client = None
+
+        def __init__(self):
+            self.messages = _FakeAnthropicModule._Messages(
+                _FakeAnthropicModule.Anthropic._behaviour
+            )
+            _FakeAnthropicModule.Anthropic.last_client = self
+
+
+def _install_fake(monkeypatch, behaviour):
+    """Инсталира фалшив `anthropic` модул и нулира backoff (без реално чакане)."""
+    import sys
+    _FakeAnthropicModule.Anthropic._behaviour = staticmethod(behaviour)
+    monkeypatch.setitem(sys.modules, "anthropic", _FakeAnthropicModule)
+    monkeypatch.setattr(vision, "_BACKOFF_BASE", 0)
+
+
+def _ok_response():
+    class _Block:
+        type = "text"
+        text = '{"constituents": [], "notes": []}'
+
+    class _Resp:
+        content = [_Block()]
+
+    return _Resp()
+
+
+def test_retry_succeeds_after_two_429(monkeypatch, tmp_path):
+    img = tmp_path / "doc.png"
+    img.write_bytes(b"\x89PNG\r\n")
+
+    def behaviour(call_n):
+        if call_n <= 2:
+            raise _FakeRateLimit("rate limited")
+        return _ok_response()
+
+    _install_fake(monkeypatch, behaviour)
+    out = vision._call_model(str(img), "composition", "model-x")
+    assert out == {"constituents": [], "notes": []}
+    assert _FakeAnthropicModule.Anthropic.last_client.messages.calls == 3
+
+
+def test_retry_exhausts_and_raises(monkeypatch, tmp_path):
+    img = tmp_path / "doc.png"
+    img.write_bytes(b"\x89PNG\r\n")
+
+    def behaviour(call_n):
+        raise _FakeRateLimit("always rate limited")
+
+    _install_fake(monkeypatch, behaviour)
+    with pytest.raises(_FakeRateLimit):
+        vision._call_model(str(img), "composition", "model-x")
+    # 3 опита, после вдигаме оригиналната грешка
+    assert _FakeAnthropicModule.Anthropic.last_client.messages.calls == 3
