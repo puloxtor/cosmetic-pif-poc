@@ -3,6 +3,8 @@
 Тестваме преобразуването на суровия текст от модела към spec — точно там,
 където числата стават структура (а не самото OCR четене).
 """
+import sys
+
 import pytest
 
 from pif_engine.extraction import vision
@@ -177,3 +179,37 @@ def test_retry_exhausts_and_raises(monkeypatch, tmp_path):
         vision._call_model(str(img), "composition", "model-x")
     # 3 опита, после вдигаме оригиналната грешка
     assert _FakeAnthropicModule.Anthropic.last_client.messages.calls == 3
+
+
+def test_model_upgrade_on_429(monkeypatch, tmp_path):
+    """При 429: първи опит → Haiku, втори → Opus, třetí → success."""
+    img = tmp_path / "doc.png"
+    img.write_bytes(b"\x89PNG\r\n")
+
+    models_used = []
+
+    class _MessagesWithModelTracking(_FakeAnthropicModule._Messages):
+        def create(self, **kwargs):
+            models_used.append(kwargs.get("model"))
+            return super().create(**kwargs)
+
+    def behaviour(call_n):
+        if call_n == 1:
+            raise _FakeAPIStatus(429)  # Rate limit на първия опит
+        return _ok_response()
+
+    _FakeAnthropicModule.Anthropic._behaviour = staticmethod(behaviour)
+    original_messages = _FakeAnthropicModule._Messages
+    _FakeAnthropicModule._Messages = _MessagesWithModelTracking
+
+    try:
+        monkeypatch.setitem(sys.modules, "anthropic", _FakeAnthropicModule)
+        monkeypatch.setattr(vision, "_BACKOFF_BASE", 0)
+
+        out = vision._call_model(str(img), "composition", "claude-haiku-4-5-20251001")
+        assert out == {"constituents": [], "notes": []}
+        # Първи опит: Haiku, втори опит: Opus
+        assert models_used[0] == "claude-haiku-4-5-20251001"
+        assert models_used[1] == vision.FALLBACK_MODEL
+    finally:
+        _FakeAnthropicModule._Messages = original_messages

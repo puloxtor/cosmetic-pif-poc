@@ -20,8 +20,9 @@ import time
 
 # По подразбиране Haiku: има по-висока TPM квота, достатъчна за OCR на
 # структурирани документи (композишън стейтмънти, листи с алергени). Opus е
-# запазен за бъдещо генериране на проза. Сменяем с env PIF_VISION_MODEL.
+# резервен при rate limit (429). Сменяем с env PIF_VISION_MODEL.
 DEFAULT_MODEL = os.environ.get("PIF_VISION_MODEL", "claude-haiku-4-5-20251001")
+FALLBACK_MODEL = "claude-opus-4-8"
 
 _MEDIA = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
@@ -141,8 +142,9 @@ _VISION_SEMAPHORE = threading.Semaphore(MAX_CONCURRENT_VISION)
 def _call_model(path: str, kind: str, model: str) -> dict:
     """Извиква Claude (vision) и връща JSON по схемата. Изолирано за тестване.
 
-    С retry/backoff при 429/529 (RateLimitError/APIStatusError) и семафор за
-    ограничаване на едновременните извиквания.
+    С retry/backoff при 429/529 (RateLimitError/APIStatusError), семафор за
+    ограничаване на едновременните извиквания, и автоматично升級към FALLBACK_MODEL
+    при 429 (rate limit).
     """
     try:
         import anthropic
@@ -150,9 +152,9 @@ def _call_model(path: str, kind: str, model: str) -> dict:
         raise ImportError("За AI-зрение е нужен пакетът `anthropic` (`pip install anthropic`).") from e
     client = anthropic.Anthropic()  # чете ANTHROPIC_API_KEY от средата
 
-    def _once() -> dict:
+    def _once(current_model: str) -> dict:
         resp = client.messages.create(
-            model=model,
+            model=current_model,
             max_tokens=16000,
             system=[{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
             output_config={"format": {"type": "json_schema", "schema": _SCHEMAS[kind]}},
@@ -165,14 +167,20 @@ def _call_model(path: str, kind: str, model: str) -> dict:
         return json.loads(text)
 
     with _VISION_SEMAPHORE:
+        current_model = model
+        upgraded_on_429 = False
         for attempt in range(_MAX_RETRIES):
             try:
-                return _once()
+                return _once(current_model)
             except (anthropic.RateLimitError, anthropic.APIStatusError) as e:
                 status = getattr(e, "status_code", None)
                 # Повтаряме само за 429 (rate limit) и 529 (overloaded).
                 if isinstance(e, anthropic.APIStatusError) and status not in (429, 529):
                     raise
+                # При 429: upgrade към Fallback модел (Opus) за следващия опит
+                if status == 429 and not upgraded_on_429 and current_model != FALLBACK_MODEL:
+                    current_model = FALLBACK_MODEL
+                    upgraded_on_429 = True
                 if attempt == _MAX_RETRIES - 1:
                     raise  # изчерпани опити → вдигаме оригиналната грешка
                 time.sleep(_BACKOFF_BASE * (2 ** attempt))
