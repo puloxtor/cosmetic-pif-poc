@@ -80,7 +80,7 @@ def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
             if declarable_name(a["name"]) is None:
                 continue
             allergens.append(AllergenContent(
-                name=a["name"],
+                name=declarable_name(a["name"]) or a["name"],
                 cas=a.get("cas", "-"),
                 fraction=float(a["pct_in_fragrance"]) / 100.0,
             ))
