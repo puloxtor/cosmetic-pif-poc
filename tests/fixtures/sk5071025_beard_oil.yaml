@@ -57,7 +57,7 @@ raw_materials:
       - { name: "Citrus Aurantium Peel Oil",  cas: "8007-75-8",    pct_in_fragrance: 4.121 }
       - { name: "Coumarin",                  cas: "91-64-5",      pct_in_fragrance: 0.588 }
       - { name: "Linalyl Acetate",            cas: "115-95-7",     pct_in_fragrance: 0.076 }
-      - { name: "Lavandula Angustifolia Oil", cas: "8000-28-0",    pct_in_fragrance: 0.118 }
+      - { name: "Lavandula Oil/Extract",       cas: "8000-28-0",    pct_in_fragrance: 0.118 }
       - { name: "Beta-Caryophyllene",         cas: "87-44-5",      pct_in_fragrance: 0.162 }
       - { name: "Citral",                    cas: "5392-40-5",    pct_in_fragrance: 0.213 }
       - { name: "Eugenol",                   cas: "97-53-0",      pct_in_fragrance: 0.048 }

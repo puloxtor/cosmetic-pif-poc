@@ -107,7 +107,60 @@ _DECLARABLE_26 = {
     "hydroxyisohexyl 3-cyclohexene carboxaldehyde":
         "Hydroxyisohexyl 3-Cyclohexene Carboxaldehyde",
 }
-_DECLARABLE_EXTRA: dict[str, str] = {}
+# Extended Annex III allergens added by Regulation (EU) 2023/1545 (in force 2025/2026).
+# Keys = _key(canonical_inci(name)) OR _key(name) as declared on IFRA certificates.
+# Values = canonical display name for the INCI list.  РЕДАКТИРУЕМИ данни.
+_DECLARABLE_EXTRA: dict[str, str] = {
+    # Annex III entry numbers referenced from Reg. 2023/1545 amendment table
+    "alpha-terpinene": "alpha-Terpinene",                         # III/131
+    "3-propylidenephthalide": "3-Propylidenephthalide",           # III/175
+    "amyl salicylate": "Amyl Salicylate",                         # III/328
+    "anethole": "Anethole",                                       # III/329
+    "benzaldehyde": "Benzaldehyde",                               # III/330
+    "camphor": "Camphor",                                         # III/331
+    "beta-caryophyllene": "beta-Caryophyllene",                   # III/332
+    "carvone": "Carvone",                                         # III/333
+    "dimethyl phenethyl acetate": "Dimethyl Phenethyl Acetate",   # III/334
+    "hexadecanolactone": "Hexadecanolactone",                     # III/335
+    "hexamethylindanopyran": "Hexamethylindanopyran",             # III/336 (HICC)
+    "linalyl acetate": "Linalyl Acetate",                         # III/337
+    # Essential-oil entries (III/347–370); multiple INCI name variants accepted
+    "cananga odorata flower oil": "Cananga Odorata Flower Oil",   # III/347
+    "cananga odorata oil": "Cananga Odorata Flower Oil",
+    "cinnamomum cassia leaf oil": "Cinnamomum Cassia Leaf Oil",   # III/348
+    "cinnamomum zeylanicum bark oil": "Cinnamomum Zeylanicum Bark Oil",  # III/349
+    "citrus aurantium dulcis flower oil": "Citrus Aurantium Dulcis Flower Oil",  # III/350
+    "citrus aurantium amara flower oil": "Citrus Aurantium Amara Flower Oil",
+    "citrus aurantium flower oil": "Citrus Aurantium Dulcis Flower Oil",
+    "citrus aurantium peel oil": "Citrus Aurantium Peel Oil",     # III/351
+    "citrus aurantium dulcis peel oil": "Citrus Aurantium Dulcis Peel Oil",
+    "citrus aurantium amara peel oil": "Citrus Aurantium Amara Peel Oil",
+    "citrus aurantium bergamia peel oil": "Citrus Aurantium Bergamia Peel Oil",  # III/352
+    "citrus bergamia fruit oil": "Citrus Aurantium Bergamia Peel Oil",
+    "citrus limon peel oil": "Citrus Limon Peel Oil",             # III/353
+    "citrus limonum peel oil": "Citrus Limon Peel Oil",
+    "lemongrass oil": "Lemongrass Oil",                           # III/354
+    "cymbopogon citratus leaf oil": "Cymbopogon Citratus Leaf Oil",
+    "eucalyptus globulus leaf oil": "Eucalyptus Globulus Leaf Oil",  # III/355
+    "eucalyptus globulus oil": "Eucalyptus Globulus Leaf Oil",
+    "eucalyptus globulus oil/extract": "Eucalyptus Globulus Leaf Oil",
+    "eugenia caryophyllus flower oil": "Eugenia Caryophyllus Flower Oil",  # III/356
+    "syzygium aromaticum flower oil": "Syzygium Aromaticum Flower Oil",
+    "jasminum grandiflorum flower oil": "Jasminum Grandiflorum Flower Oil",  # III/357
+    "jasmine oil": "Jasminum Grandiflorum Flower Oil",
+    "juniperus virginiana oil": "Juniperus Virginiana Wood Oil",   # III/358
+    "juniperus virginiana wood oil": "Juniperus Virginiana Wood Oil",
+    "laurus nobilis leaf oil": "Laurus Nobilis Leaf Oil",          # III/359
+    "lavandula angustifolia oil": "Lavandula Angustifolia Oil",    # III/360
+    "lavandula hybrida oil": "Lavandula Hybrida Oil",
+    "lavandula oil/extract": "Lavandula Angustifolia Oil",
+    "lavandula oil": "Lavandula Angustifolia Oil",
+    "mentha piperita herb oil": "Mentha Piperita Herb Oil",        # III/361
+    "mentha piperita oil": "Mentha Piperita Herb Oil",
+    "eugenyl acetate": "Eugenyl Acetate",                          # III/368
+    "geranyl acetate": "Geranyl Acetate",                          # III/369
+    "isoeugenyl acetate": "Isoeugenyl Acetate",                    # III/370
+}
 DECLARABLE_ALLERGENS = {**_DECLARABLE_26, **_DECLARABLE_EXTRA}
 
 

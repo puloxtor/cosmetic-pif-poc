@@ -115,6 +115,67 @@ class TestDeclarableAllergens:
         assert is_declarable("Benzyl Alcohol") is True
 
 
+class TestDeclarableExtra:
+    """Новите Анекс III алергени от Регламент (ЕС) 2023/1545."""
+
+    def test_hexamethylindanopyran(self):
+        assert is_declarable("Hexamethylindanopyran") is True
+        assert declarable_name("Hexamethylindanopyran") == "Hexamethylindanopyran"
+
+    def test_amyl_salicylate(self):
+        assert is_declarable("Amyl Salicylate") is True
+        assert declarable_name("Amyl Salicylate") == "Amyl Salicylate"
+
+    def test_camphor(self):
+        assert is_declarable("Camphor") is True
+
+    def test_beta_caryophyllene(self):
+        assert is_declarable("Beta-Caryophyllene") is True
+        assert declarable_name("Beta-Caryophyllene") == "beta-Caryophyllene"
+
+    def test_carvone(self):
+        assert is_declarable("Carvone") is True
+
+    def test_linalyl_acetate(self):
+        assert is_declarable("Linalyl Acetate") is True
+
+    def test_geranyl_acetate(self):
+        assert is_declarable("Geranyl Acetate") is True
+        assert declarable_name("Geranyl Acetate") == "Geranyl Acetate"
+
+    def test_alpha_terpinene(self):
+        assert is_declarable("Alpha-Terpinene") is True
+        assert declarable_name("Alpha-Terpinene") == "alpha-Terpinene"
+
+    def test_3_propylidenephthalide(self):
+        assert is_declarable("3-Propylidenephthalide") is True
+
+    def test_citrus_aurantium_peel_oil(self):
+        assert is_declarable("Citrus Aurantium Peel Oil") is True
+        assert declarable_name("Citrus Aurantium Peel Oil") == "Citrus Aurantium Peel Oil"
+
+    def test_lavandula_oil_extract_alias(self):
+        # IFRA certificates use "Lavandula Oil/Extract" — must resolve
+        assert is_declarable("Lavandula Oil/Extract") is True
+        assert declarable_name("Lavandula Oil/Extract") == "Lavandula Angustifolia Oil"
+
+    def test_lavandula_oil_alias(self):
+        assert is_declarable("Lavandula Oil") is True
+
+    def test_eucalyptus_globulus_oil_alias(self):
+        assert is_declarable("Eucalyptus Globulus Oil") is True
+        assert declarable_name("Eucalyptus Globulus Oil") == "Eucalyptus Globulus Leaf Oil"
+
+    def test_eucalyptus_globulus_oil_extract_alias(self):
+        assert is_declarable("Eucalyptus Globulus Oil/Extract") is True
+
+    def test_non_extra_not_affected(self):
+        # Classic Annex III entries still work
+        assert is_declarable("Limonene") is True
+        assert is_declarable("Linalool") is True
+        assert is_declarable("Coumarin") is True
+
+
 # ---------------------------------------------------------------------------
 # localize_inci
 # ---------------------------------------------------------------------------
