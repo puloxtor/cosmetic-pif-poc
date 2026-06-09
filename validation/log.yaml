@@ -1,0 +1,94 @@
+# Validation log — machine-readable index of all product validations.
+#
+# Each entry records the product, engine version, and findings.
+# Human-readable narrative lives in validation/<PRODUCT_ID>_FINDINGS.md.
+# See validation/schema.md for field definitions.
+#
+# Finding categories:
+#   extraction_failure  — LLM/OCR missed data from supplier documents
+#   engine_db_gap       — allergen or INCI name missing from engine tables
+#   engine_logic_bug    — incorrect calculation or ordering in engine code
+#   test_infrastructure — CI/fixture gave false confidence
+#   data_error          — error in supplier document or test prompt
+#
+# Finding severity:
+#   critical  — would cause a missing mandatory label declaration
+#   high      — would cause incorrect output visible to assessor
+#   medium    — suboptimal but not legally incorrect
+#   low       — cosmetic / documentation
+#
+# Finding status:
+#   open                — not yet fixed
+#   fixed               — fixed in fix_commit
+#   documented_not_fixed — out of engine scope, mitigated by process note
+#   wont_fix            — deliberate decision, see notes
+
+- product_id: SK5071025
+  product_name: "Beard Oil (DEMO) — Symrise 212878 Peace on Earth"
+  fixture: tests/fixtures/beard_oil_sk5071025.yaml
+  narrative: validation/SK5071025_FINDINGS.md
+  validated_on: "2026-06-09"
+  engine_commit: dedf9b4
+  validator: alex@biopharmahair.com
+  findings:
+
+    - id: A
+      category: extraction_failure
+      severity: high
+      summary: >
+        Haiku vision extracted only 8/25 allergens from IFRA certificate.
+        Missed the 3 highest-concentration allergens entirely (Citrus Aurantium
+        Peel Oil #1, Hexamethylindanopyran #3, Amyl Salicylate #5).
+      status: documented_not_fixed
+      notes: >
+        Extraction failure, not engine bug. Mitigation: use digital PDF text
+        extraction for fragrance certificates; never rely on Haiku vision alone
+        for allergen tables. Engine output is correct when fed complete data.
+
+    - id: B
+      category: engine_db_gap
+      severity: critical
+      summary: >
+        5 Annex III allergens added by Reg. (EU) 2023/1545 were missing from
+        _DECLARABLE_EXTRA in nomenclature.py. Engine silently dropped them
+        from declarations. 3 were above leave-on threshold (OTNE 0.070%,
+        Pogostemon 0.006%, Pinene 0.006%), changing declared count 12 → 15.
+      status: fixed
+      fix_commit: dedf9b4
+      entries_added:
+        - { name: "Tetramethyl Acetyloctahydronaphthalenes", annex: "III/344" }
+        - { name: "Pogostemon Cablin Oil",                   annex: "III/365" }
+        - { name: "Pinene",                                  annex: "III/371" }
+        - { name: "Terpineol",                               annex: "III/343" }
+        - { name: "Terpinolene",                             annex: "III/133" }
+      regression_guard: tests/test_allergen_db_coverage.py::test_sk5071025_previously_dropped_allergens
+
+    - id: C
+      category: test_infrastructure
+      severity: high
+      summary: >
+        Regression test used sk5071025_beard_oil.yaml (20 allergens) instead of
+        the complete beard_oil_sk5071025.yaml (25 allergens). The pruned fixture
+        was crafted to only include allergens the engine already knew, giving
+        false CI confidence and hiding Finding B.
+      status: fixed
+      fix_commit: dedf9b4
+      notes: >
+        Incomplete fixture deleted. test_inci_regression.py now points at the
+        complete fixture and expects 15 declared allergens. Parametric suite
+        in test_fixtures_parametric.py will catch similar gaps for future products.
+
+    - id: D
+      category: data_error
+      severity: medium
+      summary: >
+        ENGINE_TEST_PROMPT_SK5071025 (Drive document) contains transcription
+        errors vs. the supplier certificate: wrong CAS for beta-Caryophyllene
+        (464-48-2 = Camphor, correct is 87-44-5), 7 allergens omitted from
+        allergen_list, wrong INCI order (Coconut Alkanes after Helianthus),
+        and Sunflower Oil / Helianthus listed as separate items.
+      status: documented_not_fixed
+      notes: >
+        Supplier certificate is authoritative over test prompt. Engine correctly
+        merges duplicate INCI names and orders by descending concentration.
+        Test prompt should not be used as ground truth.

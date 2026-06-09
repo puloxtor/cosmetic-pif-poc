@@ -89,3 +89,39 @@ raw_materials:
 claims:
   - "Подхранва и омекотява брадата"
   - "100% натурален състав"
+
+# ── Parametric test expectations ────────────────────────────────────────────
+# Used by tests/test_fixtures_parametric.py. Remove/omit any key to skip that
+# assertion. Values were validated manually against the full IFRA certificate
+# (Symrise 212878 "Peace on Earth") — see validation/SK5071025_FINDINGS.md.
+expected:
+  allergen_count: 15       # allergens > 0.001 % in product (leave-on threshold)
+  sum_alarm: true          # formula sums to 103 % (intentional test case)
+  no_silent_drops: true    # all 25 allergens in this fixture are recognised
+  inci_list:
+    - "Prunus Amygdalus Dulcis Oil"
+    - "Ricinus Communis Seed Oil"
+    - "Coconut Alkanes"
+    - "Argania Spinosa Kernel Oil"
+    - "Parfum"
+    - "Citrus Aurantium Peel Oil"
+    - "Limonene"
+    - "Hexamethylindanopyran"
+    - "Tetramethyl Acetyloctahydronaphthalenes"
+    - "Linalool"
+    - "Amyl Salicylate"
+    - "Coumarin"
+    - "Citral"
+    - "Pogostemon Cablin Oil"
+    - "Pinene"
+    - "beta-Caryophyllene"
+    - "Lavandula Angustifolia Oil"
+    - "Linalyl Acetate"
+    - "Eugenol"
+    - "Geranyl Acetate"
+    - "Helianthus Annuus Seed Oil"
+    - "Olea Europaea Fruit Oil"
+    - "Simmondsia Chinensis Seed Oil"
+    - "Cucurbita Pepo Seed Oil"
+    - "Hippophae Rhamnoides Oil"
+    - "Tocopherol"
