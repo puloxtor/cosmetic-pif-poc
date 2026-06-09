@@ -160,6 +160,15 @@ _DECLARABLE_EXTRA: dict[str, str] = {
     "eugenyl acetate": "Eugenyl Acetate",                          # III/368
     "geranyl acetate": "Geranyl Acetate",                          # III/369
     "isoeugenyl acetate": "Isoeugenyl Acetate",                    # III/370
+    # Допълнени след валидиране срещу реален IFRA сертификат (Symrise 212878,
+    # "Peace on Earth"). Бяха в Анекс III списъка на доставчика, но липсваха тук
+    # → енджинът ги пропускаше тихо от декларацията. Виж SK5071025 validation.
+    "terpinolene": "Terpinolene",                                  # III/133
+    "terpineol": "Terpineol",                                      # III/343
+    "tetramethyl acetyloctahydronaphthalenes":                     # III/344 (OTNE)
+        "Tetramethyl Acetyloctahydronaphthalenes",
+    "pogostemon cablin oil": "Pogostemon Cablin Oil",              # III/365
+    "pinene": "Pinene",                                            # III/371
 }
 DECLARABLE_ALLERGENS = {**_DECLARABLE_26, **_DECLARABLE_EXTRA}
 

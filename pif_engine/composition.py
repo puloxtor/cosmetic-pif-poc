@@ -78,6 +78,16 @@ def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
         allergens = []
         for a in rm.get("allergens", []):
             if declarable_name(a["name"]) is None:
+                # НЕ пропускай тихо: ако доставчик декларира алерген, който
+                # енджинът не разпознава, оценителят трябва да го види (може да е
+                # нов Анекс III запис или печатна грешка). Тих пропуск = липсваща
+                # задължителна декларация на етикета (Член 19). Виж CLAUDE.md.
+                warnings.append(
+                    f"⚠️ {name} / „{a['name']}“: непознат за енджина алерген "
+                    f"({a.get('pct_in_fragrance', '?')}% в аромата) — НЕ е включен "
+                    "в декларацията. Провери дали е Анекс III запис, който липсва "
+                    "в базата, преди да подпишеш."
+                )
                 continue
             allergens.append(AllergenContent(
                 name=declarable_name(a["name"]) or a["name"],
