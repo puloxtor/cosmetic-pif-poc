@@ -99,6 +99,16 @@ python3 validation/validate_product.py tests/fixtures/<file>.yaml  # проду�
 - Токсикологичните стойности са ПРИМЕРНИ (не реални). Следващото = реални данни.
 - Extraction слоят съществува; AI-зрение работи с `ANTHROPIC_API_KEY`.
 
+## Известни пропуски и отложена работа
+
+Виж **`ROADMAP.md`** за списък на:
+- Открити findings (E = BHT secondary table, F = Safrole flagging)
+- Отложени features (real toxicology data, TTC/Cramer, multi-product validation, .docx output)
+- Как да отбелязиш прогрес кога работиш на пропуск
+
+**И двата репа** (`cosmetic-pif-poc` + `cosmetic-pif-ux`) са синхронизирани на този
+roadmap. Кога затваряш gap = актуализирай `ROADMAP.md` + двата `CLAUDE.md`.
+
 ## Работен стил, който очаквам от теб (Claude Code)
 
 - Пускай тестовете след всяка смислена промяна.

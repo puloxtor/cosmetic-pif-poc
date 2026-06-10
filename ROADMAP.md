@@ -1,72 +1,169 @@
-# ROADMAP — Фаза „Доказване на коректността"
+# ROADMAP — Gaps and Deferred Work
 
-> Цел: да докажем, че енджинът е РЕГУЛАТОРНО КОРЕКТЕН, преди да строим
-> уеб приложение. Работен режим: терминал (Claude Code / Codespaces).
-> Потребители за момента: 1–2.
+This document tracks known limitations, deferred features, and work items that affect the engine
+and/or the UX (`cosmetic-pif-ux`). Both repos reference this file.
 
-## Дефиниция за „готово" (Definition of Done за тази фаза)
+**Current state:**
+- ✅ Engine: 188 tests pass; validated against 1 product (SK5071025 Beard Oil)
+- ✅ UX: 57 tests pass; deployed on Railway; integrates with engine via direct Python import
+- ✅ Findings A–D logged in `validation/log.yaml` and fixed / documented
+- ✅ Findings E–F logged and marked deferred / flagged for assessor
+- ⚠️ **Gaps below must be closed for production readiness**
 
-Енджинът е доказан, когато:
+**Notation:**
+- **(E)** = affects engine; **(U)** = affects UX; **(E+U)** = both repos need updates
+- `validation/log.yaml:E` = update engine's findings; `cosmetic-pif-ux/CLAUDE.md` = update UX docs
 
-1. **Възпроизвежда 5–10 реални, вече подписани CPSR** — при подадени коректни
-   входни данни дава алергени, INCI и MoS, които съвпадат с подписаните
-   документи — БЕЗ да е донастройван за всеки отделен продукт.
-2. **Токсикологичната дупка е затворена** — чете РЕАЛНИ PoD/DAp стойности
-   (не измислени!) и MoS съвпада с изчисленията на оценителя.
-3. **Разминаванията са обяснени, не скрити** — за всяко несъответствие знаеш
-   защо (бъг за поправяне или правило за кодиране).
-4. **Оценителят по безопасност потвърждава** — Лидия (магистър-фармацевт)
-   преглежда генериран драфт и казва, че логиката е вярна.
+---
 
-## ⚠️ ПРЕДУСЛОВИЕ ПРЕДИ ДА ПИШЕШ КОД
+## Open Findings (from validation/log.yaml)
 
-Вземи РЕАЛНИТЕ токсикологични данни (PoD/DAp, тип проучване, корекционни
-фактори) за 3–5 продукта от досиетата „Exposure and risk characterisation".
-Сегашните NOAEL стойности в кода са ИЗМИСЛЕНИ placeholder-и. Без реалните
-данни ще строиш отново върху догадки.
+### Finding E — BHT (Annex III/325) fragrance secondary table **(E)**
+**Status:** deferred  
+**Severity:** medium  
+**What:** IFRA certificates have a secondary restricted substances table (1 ppm limit) that the engine ignores. BHT at 0.5882% in fragrance → 0.01765% in product **exceeds leave-on threshold (0.001%)** and should be declared in INCI.
 
-## Backlog (приблизителен ред; работи го с Claude Code)
+**Work:**
+- [ ] Model `fragrance_restricted_substances` list in `RawMaterial` / `FormulaLine`
+- [ ] Parse from IFRA certificate secondary table in extraction
+- [ ] Add BHT + other secondary Annex III substances to `DECLARABLE_ALLERGENS` (with proper thresholds)
+- [ ] Modify `generate_inci()` to include fragrance-carried restricted substances after Parfum
+- [ ] Add regression test in `tests/test_allergen_db_coverage.py` for secondary table substances
+- [ ] Update `validation/log.yaml` status to `fixed` + commit SHA when done
 
-- [ ] **Задача 1 — Реална структура за токсикология.** Подходящ начин за
-      въвеждане на PoD, DAp, тип проучване и корекционен фактор за всяка
-      съставка, както реално работи оценителят.
-- [ ] **Задача 2 — Точна MoS методология.** Включи корекционен фактор 3 за
-      28-дневни проучвания (споменат в реалния MANE документ) и логиката за
-      опаковка (Cramer/TTC), която специфицирахме, но не реализирахме.
-- [x] **Задача 3 — Чист входен формат (YAML).** ГОТОВО. Един файл на продукт
-      (`products/TEMPLATE.yaml`), зареден от `pif_engine/loader.py`. Форматът е
-      „композишън": въвеждат се суровини + композишън стейтмънти (точен %,
-      диапазон → горна граница, или остатък), а `pif_engine/composition.py`
-      смята концентрациите, сумира повтарящите се INCI и алармира при сума≠100%.
-      CLI: `python3 pifgen.py <product.yaml>` (изход в `outputs/<slug>/`).
-- [ ] **Задача 4 — 5–10 реални продукта като тестови фикстури** + harness,
-      който сравнява генериран-срещу-реален за всички наведнъж.
-- [ ] **Задача 5 — Модул за опаковка (TTC/Cramer).** Cramer класове и лимити
-      за миграция (46 / 2.3 µg/kg bw/day).
-- [ ] **Задача 6 — Форматиран изход (.docx)** по фирмения стил.
-- [ ] **Задача 7 — Преглед от оценителя** и кодиране на всяка корекция като
-      ново правило + тест.
+**Affects:** Engine core logic + extraction + tests  
+**Blocks:** Full regulatory compliance for fragrance-based products
 
-## Какво НЕ правим в тази фаза
+---
 
-- Уеб приложение, auth, база данни, deployment — отложени до доказана логика.
-- Автоматично четене на сертификати (extraction) — по-късно, само като
-  „предложение за проверка", никога като доверен източник на числа.
-- Избор TypeScript vs Python — без значение сега; терминалният Python работи.
+### Finding F — Safrole (Annex II/360) trace-level flagging **(E+U)**
+**Status:** documented; flagging automation deferred  
+**Severity:** low  
+**What:** Safrole (prohibited substance, Annex II) present at 0.000087% in product — below all thresholds but **must be flagged to the qualified assessor** in CPSR Part B.
 
-## Текущо състояние (от PoC-а)
+**Current behavior:** Engine handles concentration correctly; assessor must manually note in CPSR.
 
-- ✅ Енджин: алергени, INCI, SED/MoS, claims — работи
-- ✅ Композиционен компилатор + YAML вход + CLI (`pifgen.py`) — Задача 3 готова
-- ✅ Слой 2: хибридно извличане → ЧЕРНОВА (`extract.py`).
-      • Цифров PDF → детерминистично (pdfplumber): ароматни алергени (IFF/Symrise),
-        числови/диапазонни композиции (Phenbiox), легенда-кодирани A–G (ARDA).
-      • Сканиран PDF / изображение / ръкопис → AI-зрение (Claude, `--ocr`);
-        моделът само ЧЕТЕ, числата се парсват детерминистично, изходът е за проверка.
-      • Авто-маршрутиране по наличие на текстов слой.
-- ✅ `pifgen.py` v1 изход = таблица + INCI (CPSR зад флаг `--cpsr`)
-- ✅ 41 теста минават
-- ✅ Валидиран срещу 2 реални продукта (MANE Shampoo; Beard oil СК 5071025)
-- ⚠️ Токсикологичните стойности са placeholder-и (за реалните виж Задача 1)
-- ⚠️ Извличането е ЧЕРНОВА за проверка; сканирани/ръкописни → ръчно (нужен OCR)
-- ❌ Липсва: TTC/Cramer, .docx изход, уеб UX (Слой 3), още реални продукти
+**Work:**
+- [ ] Add `prohibited_substances` list to `Product` model (Annex II substances actually present, even at trace)
+- [ ] Modify `generate_cpsr()` to auto-generate assessor alert paragraph in Part B when prohibited substances present
+- [ ] Add test in `tests/test_engine.py::test_prohibited_substance_flagging_in_cpsr`
+- [ ] Update UX `app/main.py` to show a warning banner when `/compute` returns CPSR with prohibited substance flags
+- [ ] Update both repos' CLAUDE.md to document this auto-flagging behavior
+- [ ] Update `validation/log.yaml` status to `fixed` when done
+
+**Affects:** Engine (CPSR generation) + UX (UI warning)  
+**Blocks:** CPSR automation — currently manual assessor work
+
+---
+
+## Deferred Features (not in validation/log.yaml yet)
+
+### Real toxicology data (PoD, DAp, correction factors) **(E)**
+**Status:** blocked on data acquisition  
+**Severity:** critical  
+**What:** SED / MoS calculations in `pif_engine/toxicology.py` use **placeholder NOAEL values**, not real data. Cannot validate MoS logic without real `PoD` / `DAp` from toxicology studies.
+
+**Work:**
+- [ ] Acquire PoD / DAp / study type / correction factors for 3–5 real products from existing CPSR dosies
+- [ ] Refactor `ToxProfile` in `models.py` to accept `(study_type, correction_factors)` tuple
+- [ ] Update `toxicology.py` SED/MoS calculations to apply real correction factors (e.g., 3× for 28-day studies)
+- [ ] Create test fixtures with real numbers; validate against signed CPSR documents
+- [ ] Document in `CLAUDE.md` where the numbers come from + version control
+
+**Affects:** Engine core toxicology module  
+**Blocks:** MoS validation; production use for safety-sensitive products
+
+---
+
+### Packaging (TTC / Cramer) module **(E)**
+**Status:** scoped but not implemented  
+**Severity:** medium  
+**What:** Cramer classification and TTC (Threshold of Toxicological Concern) limits for packaging migration (46 / 2.3 µg/kg bw/day) not yet modeled.
+
+**Work:**
+- [ ] Create `pif_engine/packaging.py` with Cramer class detection + TTC thresholds
+- [ ] Add `packaging_risk` field to `Product` model
+- [ ] Integrate into MoS calculation pathway
+- [ ] Add tests in `tests/test_packaging.py`
+
+**Affects:** Engine  
+**Blocks:** Full risk characterisation for all ingredient types
+
+---
+
+### Multi-product validation suite **(E)**
+**Status:** scoped but not implemented  
+**Severity:** medium  
+**What:** Validated against 1 product (SK5071025). Need 5–10 real, signed CPSR documents to ensure engine logic is generic, not tuned to one case.
+
+**Work:**
+- [ ] Collect 5–10 real CPSR dosies (different product types, countries, suppliers)
+- [ ] Create fixtures in `tests/fixtures/` for each (named product_<type>_<country>.yaml)
+- [ ] Parameterized test in `tests/test_fixtures_parametric.py` that validates INCI + allergen count for each
+- [ ] Document each finding (if any divergence from real CPSR) in `validation/<PRODUCT>_FINDINGS.md`
+- [ ] Update `validation/log.yaml` with findings for each new product
+
+**Affects:** Engine (test coverage)  
+**Blocks:** Confidence that engine is truly generic
+
+---
+
+### CPSR .docx output formatting **(E+U)**
+**Status:** not started  
+**Severity:** medium  
+**What:** Engine generates CPSR text (Part B, Section 1); no .docx output yet. UX shows HTML; assessor must manually copy/format into Word.
+
+**Work:**
+- [ ] Use `python-docx` library to generate `.docx` from `generate_cpsr()` output
+- [ ] Template: EU Form (CPSR structure per Annex I of Reg. 1223/2009)
+- [ ] UX `/compute` endpoint: add optional query param `?format=docx` → return .docx file for download
+- [ ] Update `cosmetic-pif-ux/app/main.py` and UX CLAUDE.md
+
+**Affects:** Engine (CPSR module) + UX (route + UI)  
+**Blocks:** Direct CPSR file delivery to assessor
+
+---
+
+### Extraction robustness (secondary IFRA table parsing) **(E)**
+**Status:** partially done  
+**Severity:** medium  
+**What:** Extraction currently reads main IFRA allergen table (pdfplumber). Secondary table (restricted substances) is not automatically extracted; Finding E requires this.
+
+**Work:**
+- [ ] Extend `pif_engine/extraction/parse.py` to detect and parse 2-table IFRA format
+- [ ] Return both main + secondary tables in `extract_drafts()` output
+- [ ] Update extraction tests to cover secondary table parsing
+- [ ] Document IFRA certificate format in `pif_engine/extraction/README.md` (table structure, CAS matching, units)
+
+**Affects:** Engine extraction layer  
+**Blocks:** Finding E implementation
+
+---
+
+## Working items (in progress)
+
+- [ ] Document the official branch (`epic-mccarthy-nW68A`) in both repos' CLAUDE.md ✅ **DONE (2026-06-10)**
+- [ ] Update both repos to be synchronized on `epic-mccarthy-nW68A` ✅ **DONE (2026-06-10)**
+- [ ] Port Findings E–F to `epic-mccarthy` branch ✅ **DONE (2026-06-10)**
+
+---
+
+## How to use this document
+
+1. **For Claude Code sessions:** Both `cosmetic-pif-poc/CLAUDE.md` and `cosmetic-pif-ux/CLAUDE.md` reference this file. When starting work on a gap, read the "Work" section of that gap.
+2. **To mark progress:** Check off items in the "Work" subsection; when all items ✅, change status from `deferred` / `blocked` to `fixed`, add commit SHA to `validation/log.yaml`, and update both repos' CLAUDE.md if UI changes are needed.
+3. **PR template:** When opening a PR for a gap, link the relevant finding/feature and the work items completed.
+
+---
+
+## Verification checklist for each closed gap
+
+Before marking a gap as fixed:
+1. All work items checked ✅
+2. New tests pass: `python3 -m pytest tests/ -v`
+3. UX tests pass (if affected): `cd ../cosmetic-pif-ux && pytest tests/ -v`
+4. Update `validation/log.yaml` status + commit SHA
+5. Update CLAUDE.md in affected repos (note new feature / behavior)
+6. Commit with message: `fix(validation): close Finding [A-F] — [description]`
+7. Push to `claude/epic-mccarthy-nW68A`
+8. Both repos aware (if E+U gap, update CLAUDE.md in both)
