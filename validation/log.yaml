@@ -92,3 +92,46 @@
         Supplier certificate is authoritative over test prompt. Engine correctly
         merges duplicate INCI names and orders by descending concentration.
         Test prompt should not be used as ground truth.
+
+    - id: E
+      category: engine_scope_gap
+      severity: medium
+      summary: >
+        BHT (Butylhydroxytoluol, Annex III/325) present in IFRA certificate
+        secondary table at 0.5882% in fragrance → 0.01765% in final product,
+        exceeding the 0.001% leave-on declaration threshold. Not captured by
+        engine: the allergens list in the fixture covers only the main IFRA
+        table (10 ppm limit); the secondary table (1 ppm limit) is not modelled.
+      status: deferred
+      detail:
+        cas: "128-37-0"
+        pct_in_fragrance: 0.5882
+        pct_in_product: 0.01765
+        declaration_threshold_pct: 0.001
+        source: "Parfum_PEace on Earth.pdf — secondary restricted substances table"
+      deferred_reason: >
+        Handling non-allergen Annex III substances carried via fragrance compounds
+        requires a new engine feature (fragrance_restricted_substances list on the
+        raw material). Out of scope for current validation framework work.
+        When implemented, BHT must appear in the INCI list after Parfum.
+
+    - id: F
+      category: assessor_flag
+      severity: low
+      summary: >
+        Safrole (Annex II/360, prohibited substance) present at trace level in
+        IFRA certificate secondary table: 0.0029% in fragrance → 0.000087% in
+        final product. Below all declaration thresholds but Annex II status
+        requires explicit assessor awareness in the CPSR.
+      status: documented_not_fixed
+      detail:
+        cas: "94-59-7"
+        pct_in_fragrance: 0.0029
+        pct_in_product: 0.000087
+        annex: "II/360"
+        source: "Parfum_PEace on Earth.pdf — secondary restricted substances table"
+      notes: >
+        No engine change required. Safrole is declared by the fragrance supplier
+        (Symrise) as present at trace/residual level in compliance with Annex II
+        limits. Qualified assessor (Article 10) must note this in CPSR Part B.
+        Fixture does not need updating as amount is below any threshold.
