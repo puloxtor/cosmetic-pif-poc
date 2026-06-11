@@ -64,7 +64,8 @@ def generate_inci(product: Product) -> list[str]:
     - Дублирани имена се обединяват (сумиране на концентрациите)
     - Съставки >= 1%: низходящ ред по концентрация
     - Съставки < 1%: след тях, в произволен ред (тук запазваме реда)
-    - Алергените се добавят СЛЕД 'Parfum/Aroma'
+    - Декларируемите алергени се добавят СЛЕД целия списък със съставки
+      (винаги в края, низходящо по концентрация — виж allergens_to_declare).
     """
     lines = _consolidated_lines(product)
     above_1 = sorted(
@@ -73,18 +74,12 @@ def generate_inci(product: Product) -> list[str]:
     )
     below_1 = [l for l in lines if l.concentration_pct < 1.0]
 
-    inci: list[str] = []
-    declared_added = False
-    for line in above_1 + below_1:
-        name = line.ingredient.inci_name
-        inci.append(name)
-        if name.lower() in ("parfum", "aroma", "fragrance", "parfum/aroma"):
-            inci.extend(allergens_to_declare(product))
-            declared_added = True
-    # Ако няма Parfum ред, но има декларируеми алергени (напр. от етерично
-    # масло) — добавяме ги накрая, както в реалния INCI на MANE Shampoo.
-    if not declared_added:
-        for a in allergens_to_declare(product):
-            if a not in inci:
-                inci.append(a)
+    inci: list[str] = [line.ingredient.inci_name for line in above_1 + below_1]
+
+    # Алергените винаги трасират пълния списък със съставки (след Parfum,
+    # който е част от съставките), без да изпреварват съставки с по-висока
+    # концентрация. Не дублираме вече присъстващи имена.
+    for a in allergens_to_declare(product):
+        if a not in inci:
+            inci.append(a)
     return inci
