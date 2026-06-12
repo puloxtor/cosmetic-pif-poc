@@ -5,10 +5,14 @@
 from __future__ import annotations
 from datetime import date
 from .models import Product
-from .allergens import generate_inci, allergens_to_declare, calculate_allergens
+from .allergens import (
+    generate_inci, allergens_to_declare, calculate_allergens, ALLERGEN_THRESHOLD,
+)
 from .composition import suppressed_ingredients
-from .toxicology import product_is_safe
+from .toxicology import product_is_safe, MOS_SAFETY_THRESHOLD
 from .claims import validate_all_claims
+from .provenance import engine_provenance
+from .regulatory_refs import REGULATORY_REFS
 
 
 def check_documentation_gates(product: Product) -> list[str]:
@@ -143,5 +147,25 @@ def generate_cpsr(product: Product) -> str:
     L.append("- [ ] Отговорно лице и адрес")
     L.append("- [ ] Държава на произход (ако внос)")
     L.append("- [ ] Предупреждения за безопасност")
+
+    # ---- Произход на доклада (одитна следа, R3/R4) ----
+    # Кой енджин (версия + commit) и кои прагове са произвели ТОЗИ доклад.
+    # Подписващият оценител (Член 10) трябва да види точно това.
+    prov = engine_provenance()
+    allergen_thr = ALLERGEN_THRESHOLD[product.product_type]
+    L.append("\n---")
+    L.append("## Произход на доклада (одитна следа)")
+    L.append(f"- Енджин версия: **{prov['version']}** · commit "
+             f"`{prov['sha']}` ({prov['source']})")
+    L.append(f"- Дата на генериране: {date.today()}")
+    L.append(f"- Праг за алергени ({product.product_type.value}): "
+             f"**{allergen_thr}%** — {REGULATORY_REFS['ALLERGEN_THRESHOLD']}")
+    L.append(f"- Праг за MoS: **{MOS_SAFETY_THRESHOLD}** — "
+             f"{REGULATORY_REFS['MOS_SAFETY_THRESHOLD']}")
+    L.append(f"- Подредба на INCI: {REGULATORY_REFS['ART_19_INCI']}")
+    L.append(f"- Документация/оценка: {REGULATORY_REFS['DOC_GATES']}")
+    L.append("\n> Този доклад е генериран детерминистично от посочената версия на "
+             "енджина. Числата не идват от LLM. Подписващият оценител (Член 10) "
+             "носи юридическата отговорност.")
 
     return "\n".join(L)

@@ -35,8 +35,10 @@ Every entry maps to a fixture file and a human-readable narrative.
 - `extraction_failure` — LLM/OCR missed data from supplier documents
 - `engine_db_gap` — allergen or INCI name missing from engine tables
 - `engine_logic_bug` — incorrect calculation or ordering in engine code
+- `engine_scope_gap` — correct as-is, but a regulatory case the engine does not yet model
 - `test_infrastructure` — CI/fixture gave false confidence
 - `data_error` — error in supplier document or test prompt
+- `assessor_flag` — no engine change; the qualified assessor must note it (Article 10)
 
 ### severity
 - `critical` — would cause a **missing mandatory label declaration** (Article 19)
@@ -46,7 +48,8 @@ Every entry maps to a fixture file and a human-readable narrative.
 
 ### status
 - `open` — identified, not yet resolved
-- `fixed` — resolved; `fix_commit` is mandatory
+- `fixed` — resolved; `fix_commit` **and** `regression_guard` are mandatory
+- `deferred` — accepted as a known gap, scheduled for later (see ROADMAP.md)
 - `documented_not_fixed` — out of engine scope; process mitigation documented in `notes`
 - `wont_fix` — deliberate decision not to fix; rationale in `notes`
 

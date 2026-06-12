@@ -1,11 +1,29 @@
 # ROADMAP — Gaps and Deferred Work
 
 This document tracks known limitations, deferred features, and work items that affect the engine
-and/or the UX (`cosmetic-pif-ux`). Both repos reference this file.
+and/or the UX (`cosmetic-pif-ux`). It is the **canonical cross-repo knowledge home** (together with
+`validation/log.yaml`); the UX repo links here by **GitHub URL**, not a relative path (Finding R7).
+
+## Current State / Handoff (Finding R9)
+
+> Update this block at the end of every session so a fresh Claude instance (or teammate) can resume
+> without prior context. Read live SHAs from `git log -1` here and the `@<sha>` pin in
+> `cosmetic-pif-ux/requirements.txt`.
+
+- **Active branch (both repos):** `claude/epic-mccarthy-nW68A` (authoritative per both `CLAUDE.md`).
+  Ignore other harness-suggested branches.
+- **In-flight task:** implementing the 11 integration-review findings (G1, G2, R1–R9) from
+  `INTEGRATION_STRATEGY.md`, engine-first. Engine side (R1–R5 contract/warnings/provenance, R8 log
+  guard, CI) lands first; UX consumes the new contract after the pin bump.
+- **Pin reconciliation:** UX `requirements.txt` lagged engine HEAD (`@88eaea4`); it is bumped to the
+  new engine SHA as part of this work. G1 CI now fails loudly on future skew.
+- **Unresolved decisions:** the two pending regulatory fixes (`normalized_concentrations`, Art.19(1)(g)
+  allergen placement — see `cosmetic-pif-ux/docs/ENGINE_HANDOFF.md`) are **NOT yet landed** and are
+  out of scope for the findings work; decide whether to land them next.
 
 **Current state:**
-- ✅ Engine: 188 tests pass; validated against 1 product (SK5071025 Beard Oil)
-- ✅ UX: 57 tests pass; deployed on Railway; integrates with engine via direct Python import
+- ✅ Engine: 210 tests pass; validated against 1 product (SK5071025 Beard Oil)
+- ✅ UX: deployed on Railway; integrates with engine via direct Python import
 - ✅ Findings A–D logged in `validation/log.yaml` and fixed / documented
 - ✅ Findings E–F logged and marked deferred / flagged for assessor
 - ⚠️ **Gaps below must be closed for production readiness**

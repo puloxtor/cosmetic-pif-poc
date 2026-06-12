@@ -73,6 +73,7 @@
         false CI confidence and hiding Finding B.
       status: fixed
       fix_commit: dedf9b4
+      regression_guard: tests/test_inci_regression.py::test_sk5071025_allergen_count
       notes: >
         Incomplete fixture deleted. test_inci_regression.py now points at the
         complete fixture and expects 15 declared allergens. Parametric suite

@@ -9,6 +9,7 @@ import yaml
 
 from .models import Product
 from .composition import build_product
+from .errors import PifInputError
 
 
 def load_product(path: str) -> tuple[Product, list[str]]:
@@ -20,5 +21,5 @@ def load_product(path: str) -> tuple[Product, list[str]]:
     with open(path, encoding="utf-8") as f:
         doc = yaml.safe_load(f)
     if doc is None:
-        raise ValueError(f"Празен или невалиден YAML файл: {path}")
+        raise PifInputError(f"Празен или невалиден YAML файл: {path}")
     return build_product(doc)

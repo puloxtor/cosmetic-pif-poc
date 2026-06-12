@@ -21,6 +21,8 @@ from .models import (
     ToxProfile,
 )
 from .nomenclature import canonical_inci, declarable_name, is_suppressed_function
+from .warnings import EngineWarning, Severity
+from .errors import PifInputError, PifDataGapError
 
 SUM_TOLERANCE = 0.5   # допустимо отклонение на сумата от 100%
 
@@ -61,16 +63,16 @@ def resolve_amount(spec: dict) -> tuple[float, float, str, bool]:
     if "at_most" in spec:
         v = float(spec["at_most"])
         return (v, 0.0, f"≤{v}% → {v}%", False)
-    raise ValueError(
+    raise PifInputError(
         f"Конституент без разпозната стойност (pct/range/at_most/remainder): {spec}"
     )
 
 
-def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
+def expand_raw_material(rm: dict, warnings: list[EngineWarning]) -> list[FormulaLine]:
     """Разлага една суровина на редове от формулата (FormulaLine)."""
     name = rm.get("name", "?")
     if "dose_pct" not in rm:
-        raise ValueError(f"Суровина '{name}': липсва dose_pct.")
+        raise PifDataGapError(f"Суровина '{name}': липсва dose_pct.")
     dose = float(rm["dose_pct"])
 
     # --- Ароматна суровина: една съставка Parfum + алергени ---
@@ -82,12 +84,14 @@ def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
                 # енджинът не разпознава, оценителят трябва да го види (може да е
                 # нов Анекс III запис или печатна грешка). Тих пропуск = липсваща
                 # задължителна декларация на етикета (Член 19). Виж CLAUDE.md.
-                warnings.append(
+                warnings.append(EngineWarning(
+                    Severity.WARNING, "FRAGRANCE_UNKNOWN_ALLERGEN",
                     f"⚠️ {name} / „{a['name']}“: непознат за енджина алерген "
                     f"({a.get('pct_in_fragrance', '?')}% в аромата) — НЕ е включен "
                     "в декларацията. Провери дали е Анекс III запис, който липсва "
-                    "в базата, преди да подпишеш."
-                )
+                    "в базата, преди да подпишеш.",
+                    subject=name,
+                ))
                 continue
             allergens.append(AllergenContent(
                 name=declarable_name(a["name"]) or a["name"],
@@ -109,7 +113,7 @@ def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
     # --- Обикновена суровина: разлагане по композиция ---
     comp = rm.get("composition")
     if not comp:
-        raise ValueError(f"Суровина '{name}': липсва composition (или is_fragrance).")
+        raise PifDataGapError(f"Суровина '{name}': липсва composition (или is_fragrance).")
 
     resolved = [(resolve_amount(c), c) for c in comp]
     others_lower_sum = sum(r[0][1] for r in resolved if not r[0][3])
@@ -118,11 +122,17 @@ def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
     for (upper, lower, note, is_remainder), c in resolved:
         if is_remainder:
             upper = max(0.0, 100.0 - others_lower_sum)
-            warnings.append(
-                f"⚠️ {name} / {c['inci_name']}: {note} → прието {upper:.3f}%."
-            )
+            warnings.append(EngineWarning(
+                Severity.WARNING, "REMAINDER_ACCEPTED",
+                f"⚠️ {name} / {c['inci_name']}: {note} → прието {upper:.3f}%.",
+                subject=c["inci_name"],
+            ))
         elif note:
-            warnings.append(f"ℹ️ {name} / {c['inci_name']}: {note}.")
+            warnings.append(EngineWarning(
+                Severity.INFO, "RESOLVE_RULE_NOTE",
+                f"ℹ️ {name} / {c['inci_name']}: {note}.",
+                subject=c["inci_name"],
+            ))
         conc = dose * upper / 100.0
         ing = Ingredient(
             inci_name=canonical_inci(c["inci_name"]),
@@ -138,19 +148,19 @@ def expand_raw_material(rm: dict, warnings: list[str]) -> list[FormulaLine]:
     return lines
 
 
-def build_product(doc: dict) -> tuple[Product, list[str]]:
+def build_product(doc: dict) -> tuple[Product, list[EngineWarning]]:
     """Сглобява Product от входен документ. Връща (product, warnings)."""
     if not isinstance(doc, dict) or "product" not in doc:
-        raise ValueError("Невалиден вход: липсва секция 'product'.")
+        raise PifInputError("Невалиден вход: липсва секция 'product'.")
     p = doc["product"]
     for key in ("name", "product_type"):
         if key not in p:
-            raise ValueError(f"Секция 'product': липсва задължителен ключ '{key}'.")
+            raise PifInputError(f"Секция 'product': липсва задължителен ключ '{key}'.")
 
-    warnings: list[str] = []
+    warnings: list[EngineWarning] = []
     raw_materials = doc.get("raw_materials", [])
     if not raw_materials:
-        raise ValueError("Липсва секция 'raw_materials' (или е празна).")
+        raise PifInputError("Липсва секция 'raw_materials' (или е празна).")
 
     formula: list[FormulaLine] = []
     for rm in raw_materials:
@@ -159,10 +169,11 @@ def build_product(doc: dict) -> tuple[Product, list[str]]:
     # --- Аларма за сумата (не нормализираме тихо) ---
     dose_total = sum(float(rm["dose_pct"]) for rm in raw_materials)
     if abs(dose_total - 100.0) > SUM_TOLERANCE:
-        warnings.append(
+        warnings.append(EngineWarning(
+            Severity.WARNING, "SUM_NOT_100",
             f"⚠️ Сумата на суровините = {dose_total:.3f}% (≠ 100%). "
-            f"Смятам по рецептата буквално, не нормализирам — провери входа."
-        )
+            f"Смятам по рецептата буквално, не нормализирам — провери входа.",
+        ))
 
     cpnp = p.get("cpnp_code")
     name = f"{p['name']} (CPNP {cpnp})" if cpnp else p["name"]

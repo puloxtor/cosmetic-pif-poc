@@ -94,10 +94,13 @@ python3 validation/validate_product.py tests/fixtures/<file>.yaml  # проду�
 
 ## Текущо състояние
 
-- Енджинът минава 188 теста.
+- Енджинът минава 210 теста.
 - Валидиран срещу 1 продукт (Beard Oil SK5071025) — Findings A–F в `validation/log.yaml`.
 - Токсикологичните стойности са ПРИМЕРНИ (не реални). Следващото = реални данни.
 - Extraction слоят съществува; AI-зрение работи с `ANTHROPIC_API_KEY`.
+- Публичен контракт + одит (Findings R1–R5): `EngineWarning`/`Severity` (структурирани
+  аларми), `Pif*Error` (типизирани грешки), `engine_provenance()` + CPSR долен колонтитул,
+  `REGULATORY_REFS`, `ComputeResult`. За живо състояние/handoff виж **`ROADMAP.md`**.
 
 ## Известни пропуски и отложена работа
 

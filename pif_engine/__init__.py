@@ -23,6 +23,12 @@ from .nomenclature import (
     localize_inci, validate_inci, DECLARABLE_ALLERGENS,
     SUPPRESS_FROM_INCI, is_suppressed_function,
 )
+# Структуриран контракт + одит (Findings R1–R5). Стабилен публичен интерфейс.
+from .warnings import EngineWarning, Severity
+from .errors import PifError, PifInputError, PifDataGapError
+from .provenance import engine_provenance
+from .regulatory_refs import REGULATORY_REFS
+from .api import ComputeResult, TableRow, AllergenRow
 
 __all__ = [
     "__version__",
@@ -35,4 +41,9 @@ __all__ = [
     "localize_inci", "validate_inci", "DECLARABLE_ALLERGENS",
     "SUPPRESS_FROM_INCI", "is_suppressed_function",
     "suppressed_ingredients",
+    # R1–R5 публичен контракт + одит
+    "EngineWarning", "Severity",
+    "PifError", "PifInputError", "PifDataGapError",
+    "engine_provenance", "REGULATORY_REFS",
+    "ComputeResult", "TableRow", "AllergenRow",
 ]
