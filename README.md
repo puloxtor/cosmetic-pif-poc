@@ -40,6 +40,30 @@ python3 run_pipeline.py      # генерира outputs/CPSR_report.md
 python3 tests/test_engine.py # пуска тестовете
 ```
 
+## MCP сървър — ползване на енджина директно от Claude
+
+Енджинът се излага като MCP инструменти (`compute_product`, `validate_claims`,
+`product_template`) — тънка обвивка, всички числа идват от детерминистичния код.
+
+```bash
+pip install '.[mcp]'
+pif-mcp                    # stdio — за Claude Desktop / Claude Code
+pif-mcp --transport http   # streamable HTTP на $PORT (endpoint /mcp) — за claude.ai
+```
+
+**Claude chat (claude.ai):** нужен е публичен URL. Деплой на Railway директно от
+това репо (има `Procfile`; nixpacks чете `requirements.txt`, който инсталира
+`.[mcp]`), после в claude.ai → Settings → Connectors → **Add custom connector**
+с URL `https://<домейн>/mcp`. Сървърът е без auth — дръж URL-а частен
+(инструментът е калкулатор, не съхранява данни).
+
+**Claude Code:** `claude mcp add pif-engine -- pif-mcp`
+
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{ "mcpServers": { "pif-engine": { "command": "pif-mcp" } } }
+```
+
 ## Roadmap
 
 - [x] **Фаза 1 (тук):** CLI PoC с твърди формули и примерни данни

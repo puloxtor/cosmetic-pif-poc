@@ -7,16 +7,19 @@
 ## Последна синхронизация
 - Репо: `cosmetic-pif-poc` (енджин)
 - Клон: `claude/fervent-ramanujan-vNg22`
-- Комит: `e3273e9` — Package the engine (pyproject) + lift extraction routing
-- Дата: 2026-06-06
-- Тестове: минават (`python3 -m pytest tests/ -q`)
+- Комит: (виж `git log -1`) — Add MCP server (pif-mcp)
+- Дата: 2026-07-03
+- Тестове: минават — 53 (`python3 -m pytest tests/ -q`)
 
 ## Какво беше направено последно
-- Добавен е **portable handoff kit** за смяна между двата акаунта:
-  `.claude/hooks/session_start.sh` (branch-agnostic sync + surface), `.claude/settings.json`,
-  този `HANDOFF.md`, секция в `CLAUDE.md` и `HANDOFF_KIT.md` (инсталатор за други репо-та).
-- Auto-pull-ът е **opt-in** чрез `.claude/handoff-sync-on` (тук е създаден → включен).
-  В UX репото kit-ът се инсталира БЕЗ този файл → спящ, докато потребителят го включи.
+- **MCP сървър** (`pif_engine/mcp_server.py`, CLI `pif-mcp`, extra `mcp`):
+  инструменти `compute_product` / `validate_claims` / `product_template`.
+  stdio за Desktop/Code; `--transport http` (streamable, endpoint `/mcp`) за
+  claude.ai custom connector. `Procfile` + ред `.[mcp]` в `requirements.txt`
+  правят репото директно деплойваемо на Railway. Без auth — URL-ът да е частен.
+- По-рано: portable handoff kit (`.claude/hooks/session_start.sh` + `settings.json`
+  + този файл + `HANDOFF_KIT.md`); auto-pull е opt-in чрез `.claude/handoff-sync-on`
+  (тук включен; в UX репото kit-ът се инсталира без него → спящ).
 
 ## Какво следва (подреден списък)
 1. **Master Composition Table + Annex проверки** — нови sibling модули

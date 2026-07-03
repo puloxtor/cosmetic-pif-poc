@@ -3,3 +3,4 @@ pyyaml>=6.0
 python-docx>=1.1
 pdfplumber>=0.11   # Слой 2: извличане на текст/таблици от цифров PDF (extract.py)
 anthropic>=0.75    # Слой 2: AI-зрение за сканирани/снимани документи (extract.py --ocr)
+.[mcp]             # инсталира самия пакет + MCP сървъра (pif-mcp) — нужно за deployment (Procfile)

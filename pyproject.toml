@@ -13,10 +13,13 @@ dependencies = ["pyyaml>=6.0"]
 [project.optional-dependencies]
 # Слой 2 (извличане от документи). Ядрото работи и без тях.
 extraction = ["pdfplumber>=0.11", "anthropic>=0.75"]
+# MCP сървър (интерфейс за Claude chat/Desktop/Code). Ядрото работи и без него.
+mcp = ["mcp>=1.2"]
 
 [project.scripts]
 pifgen = "pifgen:main"
 pif-extract = "extract:main"
+pif-mcp = "pif_engine.mcp_server:main"
 
 [tool.setuptools]
 packages = ["pif_engine", "pif_engine.extraction"]
