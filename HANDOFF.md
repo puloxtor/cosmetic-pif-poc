@@ -7,16 +7,27 @@
 ## Последна синхронизация
 - Репо: `cosmetic-pif-poc` (енджин)
 - Клон: `claude/fervent-ramanujan-vNg22`
-- Комит: (виж `git log -1`) — Add MCP server (pif-mcp)
+- Комит: (виж `git log -1`) — Fix Railway build (module invocation, no local-path pip install)
 - Дата: 2026-07-03
 - Тестове: минават — 53 (`python3 -m pytest tests/ -q`)
 
 ## Какво беше направено последно
-- **MCP сървър** (`pif_engine/mcp_server.py`, CLI `pif-mcp`, extra `mcp`):
-  инструменти `compute_product` / `validate_claims` / `product_template`.
-  stdio за Desktop/Code; `--transport http` (streamable, endpoint `/mcp`) за
-  claude.ai custom connector. `Procfile` + ред `.[mcp]` в `requirements.txt`
-  правят репото директно деплойваемо на Railway. Без auth — URL-ът да е частен.
+- **Railway build fix**: `Procfile` вече пуска `python -m pif_engine.mcp_server
+  --transport http` вместо конзолния скрипт `pif-mcp`. Причина: Railpack копира
+  `requirements.txt`/`pyproject.toml` и пуска `pip install -r requirements.txt`
+  ПРЕДИ да копира останалия код (`pif_engine/`, `pifgen.py` и т.н.) — ред от вида
+  `.[mcp]` там се чупи, защото инсталира текущата директория, а изходният код
+  още не е наличен. Оправено изцяло в репото (без Railway "Build Command" в
+  dashboard-а, което не е git-versioned и няма да оцелее при repoint на проект):
+  `requirements.txt` вече изброява `mcp>=1.2` (обикновен PyPI пакет, без
+  проблема с реда), а Procfile-ът стартира модула директно от корена на
+  репото — не изисква пакетът да е pip-инсталиран. Проверено с чист venv +
+  `pip install -r requirements.txt` (без editable install) → сървърът стартира
+  и отговаря на MCP `initialize` — симулира точно каквото прави Railpack.
+- **MCP сървър** (`pif_engine/mcp_server.py`, CLI `pif-mcp` за локална/dev
+  употреба, extra `mcp`): инструменти `compute_product` / `validate_claims` /
+  `product_template`. stdio за Desktop/Code; `--transport http` (streamable,
+  endpoint `/mcp`) за claude.ai custom connector. Без auth — URL-ът да е частен.
 - По-рано: portable handoff kit (`.claude/hooks/session_start.sh` + `settings.json`
   + този файл + `HANDOFF_KIT.md`); auto-pull е opt-in чрез `.claude/handoff-sync-on`
   (тук включен; в UX репото kit-ът се инсталира без него → спящ).

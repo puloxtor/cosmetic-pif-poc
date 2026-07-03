@@ -52,10 +52,13 @@ pif-mcp --transport http   # streamable HTTP на $PORT (endpoint /mcp) — за
 ```
 
 **Claude chat (claude.ai):** нужен е публичен URL. Деплой на Railway директно от
-това репо (има `Procfile`; nixpacks чете `requirements.txt`, който инсталира
-`.[mcp]`), после в claude.ai → Settings → Connectors → **Add custom connector**
-с URL `https://<домейн>/mcp`. Сървърът е без auth — дръж URL-а частен
-(инструментът е калкулатор, не съхранява данни).
+това репо — `Procfile` пуска `python -m pif_engine.mcp_server --transport http`
+(модулно извикване от корена на репото, БЕЗ да разчита пакетът да е pip-инсталиран;
+Railpack копира `requirements.txt` преди останалия код, затова инсталация с
+локален път като `.[mcp]` там се чупи — `mcp>=1.2` е обикновена PyPI зависимост,
+работи без този проблем). После в claude.ai → Settings → Connectors → **Add
+custom connector** с URL `https://<домейн>/mcp`. Сървърът е без auth — дръж
+URL-а частен (инструментът е калкулатор, не съхранява данни).
 
 **Claude Code:** `claude mcp add pif-engine -- pif-mcp`
 
